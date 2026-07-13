@@ -3,6 +3,28 @@ import pandas as pd
 from fpdf import FPDF
 import datetime
 
+# --- إعدادات كلمة المرور ---
+def check_password():
+    password = st.text_input("Enter Password", type="password")
+    if password == "1234": # يمكنك تغيير 1234 إلى كلمة المرور التي تريدها
+        return True
+    else:
+        st.error("Wrong Password!")
+        return False
+
+# تشغيل فحص كلمة المرور
+if not check_password():
+    st.stop() # هذا يوقف التطبيق إذا كانت كلمة المرور خطأ
+
+# --- باقي الكود الخاص بالتطبيق (ابدأ من هنا) ---
+st.set_page_config(page_title="Lounge Budget App")
+st.title("Lounge Management System")
+# ... (باقي الكود الذي نسخته سابقاً) ...
+import streamlit as st
+import pandas as pd
+from fpdf import FPDF
+import datetime
+
 # إعدادات الصفحة
 st.set_page_config(page_title="Lounge Budget App")
 st.title("Lounge Management System")
