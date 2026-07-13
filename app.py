@@ -3,43 +3,38 @@ import pandas as pd
 from fpdf import FPDF
 import datetime
 
-# --- إعدادات كلمة المرور ---
-def check_password():
-    password = st.text_input("Enter Password", type="password")
-    if password == "1234": # يمكنك تغيير 1234 إلى كلمة المرور التي تريدها
-        return True
-    else:
-        st.error("Wrong Password!")
-        return False
+# --- إعدادات الصفحة ---
+st.set_page_config(page_title="نظام إدارة الميزانية - زكريا", layout="centered")
 
-# تشغيل فحص كلمة المرور
-if not check_password():
-    st.stop() # هذا يوقف التطبيق إذا كانت كلمة المرور خطأ
+# --- دالة التحقق من الدخول ---
+def login():
+    st.title("🔐 دخول الإدارة")
+    username = st.text_input("اسم المستخدم")
+    password = st.text_input("كلمة المرور", type="password")
+    
+    # يمكنك تغيير هذه القيم لاحقاً
+    if st.button("دخول"):
+        if username == "admin" and password == "1234":
+            return True
+        else:
+            st.error("اسم المستخدم أو كلمة المرور غير صحيحة")
+    return False
 
-# --- باقي الكود الخاص بالتطبيق (ابدأ من هنا) ---
-st.set_page_config(page_title="Lounge Budget App")
-st.title("Lounge Management System")
-# ... (باقي الكود الذي نسخته سابقاً) ...
-import streamlit as st
-import pandas as pd
-from fpdf import FPDF
-import datetime
-
-# إعدادات الصفحة
-st.set_page_config(page_title="Lounge Budget App")
-st.title("Lounge Management System")
-
-# دالة إنشاء ملف الـ PDF
+# --- دالة إنشاء ملف الـ PDF ---
 def create_pdf(df):
     pdf = FPDF()
     pdf.add_page()
+    
+    # عنوان التقرير
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Lounge Daily Report", ln=True, align='C')
+    pdf.cell(200, 10, txt="Lounge Daily Financial Report", ln=True, align='C')
+    
+    # التاريخ
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt=f"Date: {datetime.datetime.now().strftime('%Y-%m-%d')}", ln=True, align='C')
     pdf.ln(10)
 
-    # رؤوس الجدول
+    # رؤوس الجدول (بالإنجليزية لتجنب أخطاء الترميز)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(35, 10, "Date", border=1)
     pdf.cell(40, 10, "Section", border=1)
@@ -58,27 +53,32 @@ def create_pdf(df):
     
     return pdf.output(dest='S')
 
-# واجهة التطبيق البسيطة
-st.header("Enter Transaction")
-date = st.date_input("Date")
-section = st.selectbox("Section", ["Shisha", "Bar", "Kitchen"])
-trans_type = st.selectbox("Type", ["Income", "Expense"])
-amount = st.number_input("Amount", min_value=0)
-
-if st.button("Save & Generate PDF"):
-    # هنا يتم حفظ البيانات (مثال بسيط)
-    new_data = pd.DataFrame({'Date': [date], 'Section': [section], 'Type': [trans_type], 'Amount': [amount]})
+# --- البرنامج الرئيسي ---
+if login():
+    st.title("☕ نظام إدارة الميزانية")
     
-    # تحويل البيانات لـ PDF
-    pdf_output = create_pdf(new_data)
-    
-    st.download_button(
-        label="Download PDF Report",
-        data=pdf_output,
-        file_name="report.pdf",
-        mime="application/pdf"
-    )
-    st.success("Report generated successfully!")
+    # مدخلات المستخدم
+    date = st.date_input("التاريخ")
+    section = st.selectbox("القسم", ["الشيشة", "البار", "المطبخ"])
+    trans_type = st.selectbox("النوع", ["دخل", "مصروف"])
+    amount = st.number_input("المبلغ", min_value=0)
 
-st.markdown("---")
-st.write("Developed by: Zeko Momen 🚀")
+    # زر الحفظ والتحميل
+    if st.button("حفظ وتوليد التقرير"):
+        new_data = pd.DataFrame({'Date': [date], 'Section': [section], 'Type': [trans_type], 'Amount': [amount]})
+        
+        # توليد الملف
+        pdf_output = create_pdf(new_data)
+        
+        # زر التحميل
+        st.download_button(
+            label="📥 تحميل التقرير PDF",
+            data=pdf_output,
+            file_name="تقرير_الميزانية.pdf",
+            mime="application/pdf"
+        )
+        st.success("تم تجهيز التقرير بنجاح!")
+
+    # تذييل الصفحة
+    st.markdown("---")
+    st.write("تم التطوير بواسطة: **زكريا (Zeko Momen)** 🚀")
