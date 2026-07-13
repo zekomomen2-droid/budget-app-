@@ -3,10 +3,36 @@ import pandas as pd
 import os
 from datetime import datetime
 
+# إعداد الصفحة
 st.set_page_config(page_title="نظام إدارة اللاونج المحاسبي", layout="wide")
 
+# --- نظام تسجيل الدخول البسيط ---
+def check_password():
+    """تحقق من كلمة المرور"""
+    if "password_correct" not in st.session_state:
+        st.session_state.password_correct = False
+
+    if not st.session_state.password_correct:
+        st.title("🔐 دخول الإدارة")
+        user = st.text_input("اسم المستخدم")
+        pwd = st.text_input("كلمة المرور", type="password")
+        if st.button("دخول"):
+            # يمكنك تغيير "admin" و "1234" لأي شيء تريده
+            if user == "admin" and pwd == "1234":
+                st.session_state.password_correct = True
+                st.rerun()
+            else:
+                st.error("اسم المستخدم أو كلمة المرور غير صحيحة")
+        return False
+    return True
+
+# إذا لم يسجل الدخول، توقف هنا
+if not check_password():
+    st.stop()
+
+# --- إذا دخل المستخدم بنجاح، يتم عرض التطبيق ---
 st.title("☕ نظام إدارة ميزانية اللاونج")
-st.subheader("إدارة الشيشة، القهوة، الحلى، والأكل")
+st.sidebar.button("تسجيل الخروج", on_click=lambda: st.session_state.update({"password_correct": False}))
 
 FILE_NAME = "lounge_ledger.csv"
 
@@ -54,15 +80,8 @@ if submitted:
     st.success("تم الحفظ!")
     st.rerun()
 
-# --- عرض البيانات ---
 st.subheader("📋 سجل الحركة اليومية")
 st.dataframe(df, use_container_width=True)
-
-# --- تحليل ذكي ---
-st.subheader("📊 تحليل الأداء حسب القسم")
-if not df.empty:
-    pivot = df.groupby(["القسم/التصنيف", "النوع"])["المبلغ"].sum().unstack().fillna(0)
-    st.bar_chart(pivot)
 
 if st.button("🔴 تصفير البيانات"):
     if os.path.exists(FILE_NAME):
