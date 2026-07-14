@@ -3,34 +3,72 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
+# ==========================
+# إعدادات التطبيق
+# ==========================
+
+st.set_page_config(
+    page_title="Smart Manager",
+    page_icon="💼",
+    layout="wide"
+)
+
 DATA_FILE = "data.csv"
 PASS_FILE = "password.txt"
 
-# إنشاء كلمة المرور لأول مرة
+# ==========================
+# إنشاء الملفات تلقائياً
+# ==========================
+
 if not os.path.exists(PASS_FILE):
     with open(PASS_FILE, "w", encoding="utf-8") as f:
         f.write("1234")
+
+if not os.path.exists(DATA_FILE):
+    pd.DataFrame(
+        columns=[
+            "التاريخ",
+            "القسم",
+            "النوع",
+            "المبلغ"
+        ]
+    ).to_csv(DATA_FILE, index=False)
+
+# ==========================
+# الدوال
+# ==========================
 
 def get_password():
     with open(PASS_FILE, "r", encoding="utf-8") as f:
         return f.read().strip()
 
+
+def save_password(password):
+    with open(PASS_FILE, "w", encoding="utf-8") as f:
+        f.write(password)
+
+
 def load_data():
-    if os.path.exists(DATA_FILE):
-        df = pd.read_csv(DATA_FILE)
-    else:
-        df = pd.DataFrame(
-            columns=["التاريخ", "القسم", "النوع", "المبلغ"]
+
+    df = pd.read_csv(DATA_FILE)
+
+    if not df.empty:
+        df["التاريخ"] = pd.to_datetime(
+            df["التاريخ"],
+            errors="coerce"
         )
+
+        df = df.dropna(subset=["التاريخ"])
+
     return df
 
-st.set_page_config(
-    page_title="Smart Manager",
-    page_icon="📊",
-    layout="wide"
-)
 
+def save_data(df):
+    df.to_csv(DATA_FILE, index=False)
+# ==========================
 # نظام تسجيل الدخول
+# ==========================
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
@@ -38,76 +76,121 @@ if not st.session_state.logged_in:
 
     st.title("🔐 Smart Manager")
 
+    st.markdown("### تسجيل الدخول")
+
     password = st.text_input(
         "كلمة المرور",
         type="password"
     )
 
-    if st.button("دخول"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        login = st.button(
+            "🚀 دخول",
+            use_container_width=True
+        )
+
+    with col2:
+        st.button(
+            "❌ خروج",
+            disabled=True,
+            use_container_width=True
+        )
+
+    if login:
 
         if password == get_password():
+
             st.session_state.logged_in = True
             st.rerun()
+
         else:
-            st.error("كلمة المرور غير صحيحة")
+            st.error("❌ كلمة المرور غير صحيحة")
 
     st.stop()
 
+# ==========================
+# تحميل البيانات
+# ==========================
+
 df = load_data()
 
-if not df.empty:
-    df["التاريخ"] = pd.to_datetime(df["التاريخ"])
-
+# ==========================
 # القائمة الجانبية
+# ==========================
+
 with st.sidebar:
 
-    st.header("⚙️ الإعدادات")
+    st.title("⚙️ الإعدادات")
 
-    new_pass = st.text_input(
+    st.write("---")
+
+    new_password = st.text_input(
         "تغيير كلمة المرور",
         type="password"
     )
 
-    if st.button("حفظ كلمة المرور"):
+    if st.button(
+        "💾 حفظ كلمة المرور",
+        use_container_width=True
+    ):
 
-        if new_pass != "":
-            with open(PASS_FILE, "w", encoding="utf-8") as f:
-                f.write(new_pass)
+        if new_password.strip() == "":
+            st.warning("اكتب كلمة مرور جديدة")
+        else:
+            save_password(new_password)
+            st.success("✅ تم تغيير كلمة المرور")
 
-            st.success("تم تغيير كلمة المرور")
+    st.write("---")
 
-    st.divider()
-
-    if st.button("تسجيل خروج"):
+    if st.button(
+        "🚪 تسجيل خروج",
+        use_container_width=True
+    ):
         st.session_state.logged_in = False
         st.rerun()
 
-st.title("🚀 نظام الإدارة الذكي")
 # ==========================
-# إضافة حركة مالية
+# عنوان البرنامج
 # ==========================
 
-with st.expander("➕ إضافة حركة مالية", expanded=True):
+st.title("💼 Smart Manager")
 
-    with st.form("add_form"):
+st.caption("نظام إدارة الإيرادات والمصروفات")
+# ==========================
+# إضافة عملية مالية
+# ==========================
 
-        date = st.date_input("التاريخ")
+st.write("---")
+st.subheader("➕ إضافة عملية مالية")
+
+with st.form("add_transaction"):
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        trans_date = st.date_input("📅 التاريخ")
 
         section = st.selectbox(
-            "القسم",
+            "📂 القسم",
             [
                 "مبيعات",
-                "رواتب",
                 "مشتريات",
+                "رواتب",
                 "إيجار",
                 "كهرباء",
                 "مياه",
-                "مصاريف أخرى"
+                "وقود",
+                "صيانة",
+                "مصروفات أخرى"
             ]
         )
 
+    with col2:
+
         trans_type = st.selectbox(
-            "النوع",
+            "💳 النوع",
             [
                 "دخل",
                 "مصروف"
@@ -115,92 +198,66 @@ with st.expander("➕ إضافة حركة مالية", expanded=True):
         )
 
         amount = st.number_input(
-            "المبلغ",
+            "💰 المبلغ",
             min_value=0.0,
-            step=1.0
+            step=1.0,
+            format="%.2f"
         )
 
-        save = st.form_submit_button("💾 حفظ")
-
-        if save:
-
-            new_row = pd.DataFrame(
-                [[date, section, trans_type, amount]],
-                columns=[
-                    "التاريخ",
-                    "القسم",
-                    "النوع",
-                    "المبلغ"
-                ]
-            )
-
-            df = pd.concat(
-                [df, new_row],
-                ignore_index=True
-            )
-
-            df.to_csv(
-                DATA_FILE,
-                index=False
-            )
-
-            st.success("✅ تم حفظ الحركة المالية")
-
-            st.rerun()
-
-# ==========================
-# التقرير الشهري
-# ==========================
-
-st.subheader("📊 التقرير الشهري")
-
-c1, c2 = st.columns(2)
-
-year = c1.selectbox(
-    "السنة",
-    [2026, 2027, 2028]
-)
-
-month = c2.selectbox(
-    "الشهر",
-    list(range(1, 13))
-)
-
-if df.empty:
-
-    filtered = pd.DataFrame(
-        columns=df.columns
+    notes = st.text_input(
+        "📝 ملاحظات (اختياري)"
     )
 
-else:
+    save = st.form_submit_button(
+        "💾 حفظ العملية",
+        use_container_width=True
+    )
 
-    filtered = df[
-        (df["التاريخ"].dt.year == year)
-        &
-        (df["التاريخ"].dt.month == month)
-    ]# ==========================
+    if save:
+
+        new_row = pd.DataFrame(
+            [[
+                trans_date,
+                section,
+                trans_type,
+                amount
+            ]],
+            columns=[
+                "التاريخ",
+                "القسم",
+                "النوع",
+                "المبلغ"
+            ]
+        )
+
+        df = pd.concat(
+            [df, new_row],
+            ignore_index=True
+        )
+
+        save_data(df)
+
+        st.success("✅ تم حفظ العملية بنجاح")
+
+        st.rerun()
+        # ==========================================
 # لوحة الإحصائيات
-# ==========================
+# ==========================================
 
-if filtered.empty:
+st.write("---")
+st.subheader("📊 لوحة الإحصائيات")
 
-    st.info("لا توجد بيانات لهذا الشهر.")
+if not df.empty:
 
-else:
+    total_income = df[df["النوع"] == "دخل"]["المبلغ"].sum()
 
-    total_income = filtered[
-        filtered["النوع"] == "دخل"
-    ]["المبلغ"].sum()
+    total_expense = df[df["النوع"] == "مصروف"]["المبلغ"].sum()
 
-    total_expense = filtered[
-        filtered["النوع"] == "مصروف"
-    ]["المبلغ"].sum()
+    balance = total_income - total_expense
 
-    net_profit = total_income - total_expense
+    total_transactions = len(df)
 
-    st.subheader("📊 لوحة الإحصائيات")
-
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
 
     c1.metric(
         "💰 إجمالي الدخل",
@@ -213,57 +270,141 @@ else:
     )
 
     c3.metric(
-        "📈 صافي الربح",
-        f"{net_profit:,.2f} ريال"
+        "💵 الرصيد",
+        f"{balance:,.2f} ريال"
     )
 
-    st.divider()
+    c4.metric(
+        "🧾 عدد العمليات",
+        total_transactions
+        )
+    # ==========================================
+# الرسوم البيانية
+# ==========================================
 
-    # رسم بالأعمدة
-    st.subheader("📊 الدخل والمصروف")
+if not filtered.empty:
 
-    chart_data = (
-        filtered.groupby("النوع")["المبلغ"]
-        .sum()
+    st.write("---")
+    st.subheader("📈 الرسوم البيانية")
+
+    left, right = st.columns(2)
+
+    # رسم أعمدة حسب النوع
+    with left:
+
+        chart = (
+            filtered
+            .groupby("النوع")["المبلغ"]
+            .sum()
+        )
+
+        st.bar_chart(chart)
+
+    # رسم دائري
+    with right:
+
+        fig, ax = plt.subplots(figsize=(5,5))
+
+        ax.pie(
+            chart.values,
+            labels=chart.index,
+            autopct="%1.1f%%",
+            startangle=90
+        )
+
+        ax.axis("equal")
+
+        st.pyplot(fig)
+
+    st.write("---")
+
+    # ======================================
+    # البحث
+    # ======================================
+
+    search = st.text_input(
+        "🔍 ابحث عن قسم..."
     )
 
-    st.bar_chart(chart_data)
+    display = filtered.copy()
 
-    st.divider()
+    if search:
 
-    # مخطط دائري
-    st.subheader("🥧 توزيع العمليات")
+        display = display[
+            display["القسم"]
+            .astype(str)
+            .str.contains(
+                search,
+                case=False,
+                na=False
+            )
+        ]
 
-    fig, ax = plt.subplots(figsize=(5, 5))
-
-    ax.pie(
-        chart_data.values,
-        labels=chart_data.index,
-        autopct="%1.1f%%",
-        startangle=90
-    )
-
-    ax.axis("equal")
-
-    st.pyplot(fig)
-
-    st.divider()
-
-    # جدول العمليات
-    st.subheader("📋 جميع العمليات")
+    st.subheader("📋 العمليات المالية")
 
     st.dataframe(
-        filtered,
-        use_container_width=True
+        display,
+        use_container_width=True,
+        hide_index=True
     )
 
     st.download_button(
         "📥 تحميل التقرير CSV",
-        filtered.to_csv(index=False).encode("utf-8-sig"),
+        display.to_csv(index=False).encode("utf-8-sig"),
         "report.csv",
         "text/csv"
     )
 
-st.divider()
+else:
 
-st.caption("🚀 تم التطوير بواسطة Zeko Momen")
+    st.info("لا توجد بيانات لعرض الرسوم البيانية.")
+    # ==========================================
+# ملخص حسب الأقسام
+# ==========================================
+
+st.write("---")
+st.subheader("📂 ملخص الأقسام")
+
+if not filtered.empty:
+
+    summary = (
+        filtered.groupby(["القسم", "النوع"])["المبلغ"]
+        .sum()
+        .unstack(fill_value=0)
+    )
+
+    if "دخل" not in summary.columns:
+        summary["دخل"] = 0
+
+    if "مصروف" not in summary.columns:
+        summary["مصروف"] = 0
+
+    summary["صافي الربح"] = (
+        summary["دخل"] - summary["مصروف"]
+    )
+
+    st.dataframe(
+        summary,
+        use_container_width=True
+    )
+
+    st.write("---")
+
+    best_income = summary["دخل"].idxmax()
+
+    best_expense = summary["مصروف"].idxmax()
+
+    col1, col2 = st.columns(2)
+
+    col1.success(
+        f"🏆 أعلى دخل: {best_income}"
+    )
+
+    col2.error(
+        f"💸 أعلى مصروف: {best_expense}"
+    )
+
+else:
+
+    st.info("لا توجد بيانات.")
+    
