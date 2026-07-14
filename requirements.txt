@@ -2,3 +2,4 @@ streamlit
 pandas
 matplotlib
 openpyxl
+pip install plotly
