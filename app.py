@@ -408,3 +408,139 @@ else:
 
     st.info("لا توجد بيانات.")
     
+# ==========================================
+# تصدير Excel
+# ==========================================
+
+st.write("---")
+st.subheader("📥 تصدير التقارير")
+
+excel_data = display.copy()
+
+excel_file = "report.xlsx"
+
+try:
+
+    excel_data.to_excel(
+        excel_file,
+        index=False
+    )
+
+    with open(excel_file, "rb") as f:
+
+        st.download_button(
+            "📊 تحميل التقرير Excel",
+            f,
+            file_name="report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+except Exception as e:
+
+    st.error(e)
+
+# ==========================================
+# فلترة بالتاريخ
+# ==========================================
+
+st.write("---")
+st.subheader("📅 فلترة حسب التاريخ")
+
+col1, col2 = st.columns(2)
+
+start_date = col1.date_input(
+    "من تاريخ"
+)
+
+end_date = col2.date_input(
+    "إلى تاريخ"
+)
+
+if not df.empty:
+
+    result = df[
+        (
+            df["التاريخ"] >= pd.to_datetime(start_date)
+        )
+        &
+        (
+            df["التاريخ"] <= pd.to_datetime(end_date)
+        )
+    ]
+
+    st.write("### النتائج")
+
+    st.dataframe(
+        result,
+        use_container_width=True,
+        hide_index=True
+    )
+
+# ==========================================
+# معلومات سريعة
+# ==========================================
+
+st.write("---")
+
+st.info(
+    f"""
+📊 عدد العمليات الكلي : {len(df)}
+
+💰 إجمالي الدخل : {df[df['النوع']=='دخل']['المبلغ'].sum():,.2f}
+
+💸 إجمالي المصروف : {df[df['النوع']=='مصروف']['المبلغ'].sum():,.2f}
+"""
+)# ==========================================
+# تحسين الواجهة
+# ==========================================
+
+st.write("---")
+
+st.markdown(
+    """
+    <style>
+
+    .stMetric{
+        background:#f8f9fa;
+        border-radius:15px;
+        padding:15px;
+        border:1px solid #ddd;
+        box-shadow:0 2px 10px rgba(0,0,0,.08);
+    }
+
+    .stButton>button{
+        width:100%;
+        border-radius:10px;
+        height:45px;
+        font-weight:bold;
+    }
+
+    .stDownloadButton>button{
+        width:100%;
+        border-radius:10px;
+        height:45px;
+    }
+
+    footer{
+        visibility:hidden;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.write("")
+st.write("")
+
+st.success("✅ Smart Manager يعمل بنجاح")
+
+st.caption(
+    """
+🚀 الإصدار 1.0
+
+تم التطوير بواسطة **Zeko Momen**
+
+شكراً لاستخدامك Smart Manager ❤️
+"""
+)
